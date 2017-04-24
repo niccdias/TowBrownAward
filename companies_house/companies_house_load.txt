@@ -1,0 +1,43 @@
+// import companies_appointments.csv
+LOAD CSV WITH HEADERS FROM "file:/data/student/Joy_Enterprise_Secretary_Services/companies_appointments.csv" AS row
+MERGE (c:Company {company_number: row.`Company number`})
+SET c.name                = row.Name,
+    c.company_status      = row.`Company status`,
+    c.registration_number = row.`Registration Number`,
+    c.address             = row.Address,
+    c.correspondence_address = row.`Correspondence address`
+MERGE (appointed:Company {name: row.Appointed})
+
+MERGE (appointed)<-[r:APPOINTED]-(c)
+SET r.start_date = row.`Appointed on`,
+    r.end_date   = row.`Resigned on`,
+    r.role       = row.Role;
+
+// companies_overview.csv
+LOAD CSV WITH HEADERS FROM "file:/data/student/Wise_Honest/companies_overview.csv" AS row
+MERGE (c:Company {company_number: row.Number})
+SET c += row;
+
+// companies_officers
+LOAD CSV WITH HEADERS FROM "file:/data/student/Surplus_Sea_Ltd/companies_officers.csv" AS row
+MERGE (p:Person {name: row.Name})
+SET p.country_of_residence = row.`Country of residence`,
+    p.occupation           = row.Occupation,
+    p.registration_number  = row.`Registration number`,
+    p.date_of_birth        = row.`Date of birth`
+MERGE (c:Company {name: row.Company})
+MERGE (p)-[r:OFFICER_OF]->(c)
+SET r.role = row.Role,
+    r.state_date = row.`Appointed on`,
+    r.end_date   = row.`Resigned on`;
+
+
+// find connections
+MATCH (c:Company) WHERE c.correspondence_address IS NOT NULL
+MERGE (a:Address {Address: c.correspondence_address})
+MERGE (c) -[:correspondence_address]-> (a)
+
+
+MATCH (c1:Company {name: "SURPLUS SEA LIMITED”}), (c2:Company {name: "Wise Honest International Ltd "}),
+      path = shortestpath((c2)-[*]-(c1))
+RETURN c2
